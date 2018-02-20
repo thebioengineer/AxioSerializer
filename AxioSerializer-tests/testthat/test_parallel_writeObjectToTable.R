@@ -20,7 +20,7 @@ test_that("Objects can be written in parallel into the Table",{
     testObject1<-c(1,2,3)
 
     sfInit(parallel = TRUE, cpus = 3)
-    sfLibrary( AxioSerializer , keep.source = FALSE )
+    suppressMessages(sfLibrary( AxioSerializer , keep.source = FALSE ))
 
     writeObjectWrapper <- function(val,object,pathToDB) {
       writeObjectToTable(object,paste0("testObject_",val),"Test_Parallel",pathToDB)

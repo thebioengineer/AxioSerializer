@@ -9,6 +9,9 @@
 #'
 #' @import RSQLite
 #' @import flock
+#' @import lz4
+#' @import stringr
+#' @import stringi
 #'
 #' @return NULL
 #'
@@ -23,10 +26,12 @@
 #' }
 #'
 #' @export
-writeObjectToTable <- function( objectToSave, ObjectName , tableName , databaseToWriteTo , overwriteEntry = FALSE, compressionType = "bzip2" , lockFile = tempfile() )
+writeObjectToTable <- function( objectToSave, ObjectName , tableName , databaseToWriteTo , overwriteEntry = FALSE, lockFile = tempfile() )
 {
 
   ll <- lock( lockFile )
+  on.exit( unlock(ll))
+
   if(is.null(tableName)) stop("Must Provide a table to append to!, 'tableName' cannot be left null")
 
   # Create object name for storing --------------------------------------------------------------------
@@ -46,42 +51,62 @@ writeObjectToTable <- function( objectToSave, ObjectName , tableName , databaseT
 
   # Serialize and Compress Object. Append to list of objects
   serialized <- serialize(objectToSave, NULL)
-  compressedserializedData<-rawToChar(memCompress(serialized,compressionType),TRUE)
+  compressedserializedData<-rawToChar(lzCompress(serialized),TRUE)
   compressedserializedData[which(compressedserializedData=="")]<-'BLANK'
   compressedserializedData[which(compressedserializedData==" ")]<-"SPC"
   compressedserializedData[which(compressedserializedData=='"')]<-"DQ"
   compressedserializedData[which(compressedserializedData=="]")]<-"CSB"
   compressedserializedData[which(compressedserializedData=="[")]<-"OSB"
   compressedserializedData[which(compressedserializedData=="'")]<-"SQ"
-  compressedserializedData<-paste(compressedserializedData, collapse=" " )
+  compressedserializedData<-stri_join(compressedserializedData, collapse=" ")
 
-  databaseQuery <- paste0("REPLACE INTO ",tableName,"(OBJECTNAMES,RAWDATA) VALUES('",ObjectName,"','",compressedserializedData,"')")
-
+  databaseQuery <- stri_join("REPLACE INTO ", tableName, "(OBJECTNAMES,RAWDATA,COMPRESSIONTYPE) VALUES('",ObjectName, "','", compressedserializedData, "','LZ4')")
 
   repeat {
     rv <- try(dbExecute(mydb, databaseQuery))
     if (!is(rv, "try-error"))
       break
+
   }
-
-
-  unlock( ll )
 }
 
 CheckExistence<-function(mydb,tableName,ObjectName,overwriteEntry){
   tableList<-dbListTables(mydb)
   if(tableName%in%tableList){
     #check if the object exists already in the table. If so and overwriteEntry=FALSE, throw error
-    preexistingObject<-dim(dbGetQuery(mydb,paste0("SELECT OBJECTNAMES FROM ",tableName," WHERE OBJECTNAMES IN ('",ObjectName,"')"), row.names=FALSE))[1]>0
-    if(preexistingObject){
+    preexistingObject<-dbGetQuery(mydb,sprintf("SELECT \"COMPRESSIONTYPE\" FROM %s WHERE OBJECTNAMES IN ('%s') ",tableName,ObjectName), row.names=FALSE)
+    if(dim(preexistingObject)[1]>0){
       if(overwriteEntry==FALSE){
         stop("Cannot overwrite preexisting object. Either supply a new name, or set overwriteEntry = TRUE")
       }
+      if(is.character(preexistingObject$COMPRESSIONTYPE) && identical(preexistingObject$COMPRESSIONTYPE,"COMPRESSIONTYPE")){
+        try(dbExecute(mydb,sprintf("ALTER TABLE %s ADD COMPRESSIONTYPE varchar",tableName)),silent=TRUE)
+      }
     }
   }else{
-    createNewTable<-try(dbExecute(mydb,paste("CREATE TABLE",tableName,"(OBJECTNAMES varchar PRIMARY KEY,RAWDATA varchar)"), row.names=FALSE))
+    createNewTable<-try(dbExecute(mydb,sprintf("CREATE TABLE %s (OBJECTNAMES varchar PRIMARY KEY,RAWDATA varchar,COMPRESSIONTYPE varchar)",tableName), row.names=FALSE),silent=TRUE)
     if (is(createNewTable, "try-error"))
       CheckExistence(mydb,tableName,ObjectName,overwriteEntry)
 
   }
 }
+
+# objectExists<-function(mydb,tableName,objectName,overwriteEntry=FALSE){
+#   tableExists<-dbGetQuery(mydb,sprintf("SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = '%s'",tableName))[[1]]
+#   if(!tableExists){
+#     createNewTableResults<-try(dbExecute(mydb,sprintf("CREATE TABLE %s (OBJECTNAMES varchar PRIMARY KEY,RAWDATA varchar,COMPRESSIONTYPE varchar)",tableName)),silent=TRUE)
+#     if (is(createNewTableResults, "try-error"))
+#       objectExists(mydb,tableName,objectName,overwriteEntry)
+#   }else{
+#     objectExists<-dbGetQuery(mydb,sprintf("SELECT CASE (SELECT \"COMPRESSIONTYPE\" FROM %1$s WHERE OBJECTNAMES IN ('%2$s')) WHEN 'LZ4' THEN 1 WHEN 'COMPRESSIONTYPE' THEN 2 ELSE 0 END",tableName,objectName))[[1]]
+#     if(objectExists){
+#       if(objectExists==2){
+#         try(dbExecute(mydb,sprintf("ALTER TABLE %s ADD COMPRESSIONTYPE varchar",tableName)),silent=TRUE)
+#       }
+#       if(!overwriteEntry){
+#         stop("Cannot overwrite preexisting object. Either supply a new name, or set overwriteEntry = TRUE")
+#       }
+#     }else{
+#     }
+#   }
+# }

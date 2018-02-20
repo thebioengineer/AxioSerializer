@@ -33,6 +33,7 @@ writeObjectToDB <- function(objectToSave, databaseToWriteTo, tableName = NULL, o
 
     # Put object into database ------------------------------
     mydb <- dbConnect(RSQLite::SQLite(), dbname = databaseToWriteTo)
+    on.exit(dbDisconnect(mydb))
     dbWriteTable(mydb, objectToSaveName, serializeddata, overwrite = overwriteEntry)
-    dbDisconnect(mydb)
+
 }

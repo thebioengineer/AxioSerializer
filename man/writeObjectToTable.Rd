@@ -5,8 +5,7 @@
 \title{Read add an Object to a list of objects inside a SQLite database}
 \usage{
 writeObjectToTable(objectToSave, ObjectName, tableName, databaseToWriteTo,
-  overwriteEntry = FALSE, compressionType = "bzip2",
-  lockFile = tempfile())
+  overwriteEntry = FALSE, lockFile = tempfile())
 }
 \arguments{
 \item{objectToSave}{Any R object to be stored inside the database}

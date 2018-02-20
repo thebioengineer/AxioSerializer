@@ -15,14 +15,14 @@ dbDisconnect(testwritingConn)
 
 test_that("Objects can be written in parallel into the Table",{
 
-  canParallel<-require(snowfall)
+  canParallel<-require(snowfall,quietly = TRUE)
 
   if(canParallel){
     testObject1<-c(1,2,3)
 
     sfInit(parallel = TRUE, cpus = 3)
     on.exit(sfStop())
-    sfLibrary( AxioSerializer , keep.source = FALSE )
+    suppressPackageStartupMessages(suppressMessages(sfLibrary( AxioSerializer , keep.source = TRUE , verbose = FALSE)))
     LockFile<-file.path( path.package( "AxioSerializer" ) , "tests","testthatdata" ,"Test_Parallel")
     #LockFile<-file.path( "tests","testthatdata" ,"Test_Parallel")
     if(file.exists(paste0(LockFile,".log")))
@@ -39,20 +39,20 @@ test_that("Objects can be written in parallel into the Table",{
     dbDisconnect(db)
 
     expect_true(!any(!(paste0("testObject_",1:100)%in%writtenObjects$OBJECTNAMES)))
-
+    expect_identical(readObjectFromTable(paste0("testObject_1"),"Test_Parallel",pathToDB),testObject1)
   }
 })
 
 
 test_that("Objects can be written in parallel twice into the Table",{
 
-  canParallel<-require(snowfall)
+  canParallel<-require(snowfall,quietly = TRUE)
 
   if(canParallel){
     testObject1<-c(1,2,3)
 
     sfInit(parallel = TRUE, cpus = 3)
-    sfLibrary( AxioSerializer , keep.source = FALSE )
+    suppressPackageStartupMessages(sfLibrary( AxioSerializer , keep.source = TRUE ,verbose = FALSE))
     LockFile<-file.path( path.package( "AxioSerializer" ) , "tests","testthatdata" ,"Test_Parallel_WriteTwice")
     #LockFile<-file.path( "tests","testthatdata" ,"Test_Parallel_WriteTwice")
     if(file.exists(paste0(LockFile,".log")))

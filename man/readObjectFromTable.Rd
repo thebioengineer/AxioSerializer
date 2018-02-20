@@ -2,29 +2,28 @@
 % Please edit documentation in R/readObjectFromTable.R
 \name{readObjectFromTable}
 \alias{readObjectFromTable}
-\title{Read add an Object to a list of objects inside a SQLite database}
+\title{Read add an Object from inside a SQLite database table}
 \usage{
-readObjectFromTable(objectToRead, tableName, databaseToReadFrom,
-  compressionType = "bzip2")
+readObjectFromTable(objectToRead, tableName, databaseToReadFrom, ...)
 }
 \arguments{
-\item{tableName}{table to append to}
+\item{objectToRead}{The name of theR object to be read from inside the database}
 
-\item{objectToSave}{Any R object to be stored inside the database}
+\item{tableName}{table to read from}
 
-\item{ObjectName}{The name the object will be saved as in table. If left blank, will be the name of the object}
+\item{databaseToReadFrom}{The Path to the database that the object will read from}
 
-\item{databaseToWriteTo}{The Path to the database that the object will read from, must end in '.DB'}
+\item{...}{additional arguments to be passed to the decompression function \code{\link[base]{memDecompress}}, unlikely necessary}
 }
 \description{
-Read add an Object to a list of objects inside a SQLite database
+Read add an Object from inside a SQLite database table
 }
 \examples{
 \dontrun{
 exampleVector<-c(1,2,3,4)
-appendObjectToTable(exampleVector, "Example_Vector", "ListOfVectors","Example.DB")
+appendObjectToTable(exampleVector, "Example_Vector", "Example_Table","Example.DB")
 
-exampleVector2<-readObjectFromTable("Example_Vector","ListOfVectors","Example.DB")
+exampleVector2<-readObjectFromTable("Example_Vector","Example_Table","Example.DB")
 
 identical(exampleVector,exampleVector2)
 }

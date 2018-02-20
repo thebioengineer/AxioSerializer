@@ -1,6 +1,7 @@
 library(AxioSerializer)
 library(testthat)
 library(RSQLite)
+
 context("Storing Serialize Objects inside a single table to be smaller")
 
 pathToDB <- file.path( path.package( "AxioSerializer" ) , "tests","testthatdata" ,"Test_Appending.DB")

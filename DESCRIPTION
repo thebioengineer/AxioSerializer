@@ -1,18 +1,19 @@
 Package: AxioSerializer
 Title: Serializes and stores objects in Databases
-Version: 1.0
+Version: 1.1
 Authors@R: person("Ellis", "Hughes", email = "ellish@axioresearch.com", role = "cre")
 Maintainer: Ellis Hughes <ellish@axioresearch>
 Description: Provide tool to serialize any object type and store it in a SQLite
     database. Also has tools to either read and assign object, or unserialize
     objects to the global environment
-Depends: R (>= 3.3.0), RSQLite, DBI, Unicode, flock
+Depends: R (>= 3.3.0), RSQLite, DBI, Unicode, flock, blob, fst, lz4,
+        stringi, stringr
 License: What license is it under?
 Encoding: UTF-8
 LazyData: true
-Imports: DBI, RSQLite, flock
+Imports: RSQLite, DBI, Unicode, flock, blob, fst, lz4, stringi, stringr
 RoxygenNote: 6.0.1
 Suggests: testthat
 NeedsCompilation: no
-Packaged: 2017-12-19 18:38:32 UTC; ellish
+Packaged: 2018-02-20 16:56:03 UTC; ellish
 Author: Ellis Hughes [cre]
